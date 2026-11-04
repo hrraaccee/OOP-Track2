@@ -1,0 +1,50 @@
+@page "/tasks/add"
+@page "/tasks/{Id:int}"
+@attribute [Authorize]
+@inject IDataService Data
+@inject NavigationManager Navigation
+<PageTitle>@(Id.HasValue ? "Изменить задачу" : "Новая задача")</PageTitle>
+<a class="back-link" href="/">← К списку задач</a>
+<h1>@(Id.HasValue ? "Изменить задачу" : "Новая задача")</h1>
+@if (missing)
+{
+    <div class="alert alert-warning" role="alert">Задача не найдена или недоступна.</div>
+}
+else if (Input is not null)
+{
+    <section class="form-panel">
+        @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+        <EditForm Model="Input" method="post" OnValidSubmit="SaveAsync" FormName="task" Enhance="false">
+            <DataAnnotationsValidator /><ValidationSummary class="text-danger" role="alert" />
+            <div class="mb-4"><label for="title" class="form-label">Заголовок</label><InputText id="title" @bind-Value="Input.Title" class="form-control" maxlength="120" /><ValidationMessage For="() => Input.Title" /></div>
+            <div class="mb-4"><label for="description" class="form-label">Описание</label><InputTextArea id="description" @bind-Value="Input.Description" class="form-control" rows="5" maxlength="2000" /><ValidationMessage For="() => Input.Description" /></div>
+            <div class="mb-4"><label for="finish" class="form-label">Дата окончания</label><InputText type="date" id="finish" @bind-Value="Input.FinishDate" class="form-control" /><ValidationMessage For="() => Input.FinishDate" /></div>
+            <div class="form-check mb-4"><InputCheckbox id="completed" @bind-Value="Input.IsCompleted" class="form-check-input" /><label for="completed" class="form-check-label">Задача выполнена</label></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">Сохранить</button><a href="/" class="btn btn-outline-secondary">Отмена</a></div>
+        </EditForm>
+    </section>
+}
+@code {
+    [Parameter] public int? Id { get; set; }
+    [SupplyParameterFromForm] private TaskInput? Input { get; set; }
+    private bool missing;
+    private string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            var item = await Data.GetTaskAsync(Id.Value);
+            missing = item is null;
+            if (item is not null) Input ??= new TaskInput { Title = item.Title, Description = item.Description, FinishDate = item.FinishDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), IsCompleted = item.IsCompleted };
+        }
+        else Input ??= new();
+    }
+    private async Task SaveAsync()
+    {
+        if (missing || Input is null) return;
+        try { await Data.SaveAsync(Id, Input); }
+        catch (ValidationException exception) { error = exception.Message; return; }
+        catch (KeyNotFoundException) { missing = true; return; }
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

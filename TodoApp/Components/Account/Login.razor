@@ -1,0 +1,32 @@
+@page "/Account/Login"
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager Navigation
+<PageTitle>Вход</PageTitle>
+<section class="auth-panel"><p class="eyebrow">С возвращением</p><h1>Войти в аккаунт</h1><p class="text-muted">Ваши планы и задачи ждут вас.</p>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+<EditForm Model="Input" method="post" OnValidSubmit="LoginAsync" FormName="login" Enhance="false">
+    <DataAnnotationsValidator /><ValidationSummary class="text-danger" role="alert" />
+    <div class="mb-3"><label for="email" class="form-label">Электронная почта</label><InputText id="email" type="email" @bind-Value="Input.Email" class="form-control" autocomplete="username" /></div>
+    <div class="mb-3"><label for="password" class="form-label">Пароль</label><InputText id="password" type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" /></div>
+    <div class="form-check mb-4"><InputCheckbox id="remember" @bind-Value="Input.RememberMe" class="form-check-input" /><label for="remember" class="form-check-label">Запомнить меня</label></div>
+    <button type="submit" class="btn btn-primary w-100">Войти</button>
+</EditForm><p class="mt-4 mb-0">Нет аккаунта? <a href="/Account/Register">Зарегистрироваться</a></p></section>
+@code {
+    [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
+    private string? error;
+    private async Task LoginAsync()
+    {
+        var result = await SignInManager.PasswordSignInAsync(Input.Email.Trim(), Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        if (result.Succeeded) Navigation.NavigateTo("/", forceLoad: true);
+        else error = result.IsLockedOut ? "Слишком много попыток. Повторите вход через 5 минут." : "Неверная почта или пароль.";
+    }
+    public sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Введите почту."), EmailAddress(ErrorMessage = "Проверьте адрес почты.")]
+        public string Email { get; set; } = "";
+        [Required(ErrorMessage = "Введите пароль.")]
+        public string Password { get; set; } = "";
+        public bool RememberMe { get; set; }
+    }
+}

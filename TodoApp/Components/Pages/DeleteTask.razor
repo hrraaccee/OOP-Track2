@@ -1,0 +1,24 @@
+@page "/tasks/{Id:int}/delete"
+@attribute [Authorize]
+@inject IDataService Data
+@inject NavigationManager Navigation
+<PageTitle>Удаление задачи</PageTitle>
+<a class="back-link" href="/">← К списку задач</a><h1>Удалить задачу?</h1>
+@if (item is null)
+{
+    <div class="alert alert-warning">Задача не найдена или уже удалена.</div>
+}
+else
+{
+    <section class="form-panel"><h2 class="h5">@item.Title</h2><p class="task-description">@item.Description</p><p class="text-muted">Задача будет удалена из вашего списка.</p>
+        <EditForm Model="Input" method="post" FormName="delete" OnValidSubmit="DeleteAsync" Enhance="false"><input type="hidden" name="Input.Confirm" value="true" /><button type="submit" class="btn btn-danger">Удалить задачу</button><a href="/" class="btn btn-outline-secondary ms-2">Отмена</a></EditForm>
+    </section>
+}
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromForm] private DeleteInput Input { get; set; } = new();
+    private TaskItem? item;
+    protected override async Task OnInitializedAsync() => item = await Data.GetTaskAsync(Id);
+    private async Task DeleteAsync() { if (!Input.Confirm) return; await Data.DeleteAsync(Id); Navigation.NavigateTo("/", forceLoad: true); }
+    public sealed class DeleteInput { public bool Confirm { get; set; } }
+}

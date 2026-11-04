@@ -1,0 +1,20 @@
+@inherits LayoutComponentBase
+<header class="topbar">
+    <div class="container topbar-inner">
+        <a class="brand" href="/">Мои задачи<span>Личный список дел</span></a>
+        <AuthorizeView>
+            <Authorized>
+                <div class="account-nav">
+                    <span class="user-email">@context.User.Identity?.Name</span>
+                    <form action="/Account/Logout" method="post" data-enhance="false">
+                        <AntiforgeryToken /><button type="submit" class="btn btn-outline-light btn-sm">Выйти</button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized><a class="btn btn-outline-light btn-sm" href="/Account/Login">Войти</a></NotAuthorized>
+        </AuthorizeView>
+    </div>
+</header>
+<main class="container main-content">@Body</main>
+<footer class="container footer">Список задач · Трек 2</footer>
+<div id="blazor-error-ui" role="alert">Соединение прервано. <a href="" class="reload">Обновить страницу</a></div>

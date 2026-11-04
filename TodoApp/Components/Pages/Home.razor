@@ -1,0 +1,43 @@
+@page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject IDataService Data
+<PageTitle>Мои задачи</PageTitle>
+<div class="page-heading"><div><p class="eyebrow">План на каждый день</p><h1>Мои задачи</h1><p class="text-muted">Всё важное — в одном месте.</p></div><a class="btn btn-primary" href="/tasks/add">+ Новая задача</a></div>
+@if (tasks is null)
+{
+    <p role="status">Загрузка задач…</p>
+}
+else
+{
+    <div class="stats"><span>Всего <strong>@tasks.Count</strong></span><span>В работе <strong>@tasks.Count(task => !task.IsCompleted)</strong></span><span>Выполнено <strong>@tasks.Count(task => task.IsCompleted)</strong></span></div>
+    <div class="filters">
+        <div class="search"><label for="search">Поиск задач</label><input id="search" class="form-control" placeholder="Заголовок или описание" @bind="search" @bind:event="oninput" /></div>
+        <div><label for="status">Статус</label><select id="status" class="form-select" @bind="filter"><option value="all">Все задачи</option><option value="active">В работе</option><option value="completed">Выполненные</option></select></div>
+    </div>
+    @if (!FilteredTasks.Any())
+    {
+        <section class="empty-state"><h2>@(tasks.Count == 0 ? "Начните с первой задачи" : "Ничего не найдено")</h2><p>@(tasks.Count == 0 ? "Добавьте название, описание и срок — и приступайте к делу." : "Попробуйте другой запрос или выберите все задачи.")</p></section>
+    }
+    else
+    {
+        <div class="row g-4 task-grid">
+            @foreach (var task in FilteredTasks)
+            {
+                <div class="col-md-6 col-xl-4" @key="task.Id"><article class="card task-card h-100" data-task-id="@task.Id">
+                    <div class="card-body"><span class="badge @(task.IsCompleted ? "bg-success" : "status-active")">@(task.IsCompleted ? "Выполнено" : "В работе")</span><h2 class="h5 mt-3">@task.Title</h2><p class="task-description">@task.Description</p><dl class="task-dates"><dt>Создано</dt><dd>@task.CreatedDate.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd><dt>Срок</dt><dd>@(task.FinishDate?.ToString("dd.MM.yyyy") ?? "Без срока")</dd></dl></div>
+                    <div class="card-footer"><a class="btn btn-outline-primary btn-sm" href="@($"/tasks/{task.Id}")">Изменить</a><a class="btn btn-outline-danger btn-sm" href="@($"/tasks/{task.Id}/delete")">Удалить</a></div>
+                </article></div>
+            }
+        </div>
+    }
+}
+@code {
+    private List<TaskItem>? tasks;
+    private string search = "";
+    private string filter = "all";
+    private IEnumerable<TaskItem> FilteredTasks => (tasks ?? []).Where(task =>
+        (filter == "all" || (filter == "completed") == task.IsCompleted) &&
+        (task.Title.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) || task.Description.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)));
+    protected override async Task OnInitializedAsync() => tasks = await Data.GetTaskItemsAsync();
+}
